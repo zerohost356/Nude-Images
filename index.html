@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Card Gallery</title>
+  <title>Thư Viện Ảnh HD</title>
   <style>
     * {
       margin: 0;
@@ -35,40 +35,55 @@
     }
 
     .gallery {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      justify-content: center;
-      max-width: 1200px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 18px;
+      justify-items: center;
+      max-width: 1300px;
       margin: 0 auto;
     }
 
     .card-item {
+      width: 100%;
+      max-width: 260px;
       display: flex;
       flex-direction: column;
       align-items: center;
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
     .card-item:hover {
-      transform: translateY(-8px) scale(1.06);
+      transform: translateY(-10px);
+      box-shadow: 0 18px 38px rgba(0,0,0,0.35);
     }
 
     .card-item img {
-      width: 160px;
-      height: auto;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      background: #fff;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.42);
+      background: linear-gradient(135deg, #2b5b37 0%, #18321b 100%);
       display: block;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .card-item img.loaded {
+      opacity: 1;
     }
 
     .card-name {
-      margin-top: 8px;
-      font-size: 0.75rem;
-      color: #a8d5a2;
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: #e6f4d9;
       letter-spacing: 1px;
+      text-align: center;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .card-item.hidden {
@@ -101,10 +116,12 @@
     }
 
     .modal-box img {
-      width: 160px;
+      width: 100%;
+      max-height: 75vh;
       height: auto;
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+      object-fit: contain;
     }
 
     .modal-box h2 {
@@ -112,6 +129,20 @@
       margin-top: 14px;
       font-size: 1rem;
       letter-spacing: 2px;
+      word-break: break-word;
+    }
+
+    .modal-box {
+      background: rgba(26, 71, 42, 0.98);
+      border: 2px solid rgba(240, 230, 140, 0.9);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      position: relative;
+      max-width: 90vw;
+      width: 100%;
+      max-height: 90vh;
+      overflow: hidden;
     }
 
     .modal-close {
@@ -134,8 +165,8 @@
 </head>
 <body>
 
-  <h1>Card Gallery</h1>
-  <p class="subtitle">52 Playing Cards + Special Cards</p>
+  <h1>Thư Viện Ảnh HD</h1>
+  <p class="subtitle">Tải ảnh đẹp, xem nhanh, chất lượng cao</p>
 
   <div class="gallery" id="gallery"></div>
 
@@ -148,24 +179,39 @@
   </div>
 
   <script>
-    const BASE     = "https://raw.githubusercontent.com/zerohost356/Nude-Images/main/Images/";
-    const API_URL  = "https://api.github.com/repos/zerohost356/Nude-Images/contents/Images";
-    
-    const gallery   = document.getElementById("gallery");
-    const modal     = document.getElementById("modal");
-    const modalImg  = document.getElementById("modalImg");
-    const modalName = document.getElementById("modalName");
-    const modalClose= document.getElementById("modalClose");
-    const subtitle  = document.querySelector(".subtitle");
+    const BASE    = "https://raw.githubusercontent.com/zerohost356/Nude-Images/main/Images/";
+    const API_URL = "https://api.github.com/repos/zerohost356/Nude-Images/contents/Images";
+
+    const gallery    = document.getElementById("gallery");
+    const modal      = document.getElementById("modal");
+    const modalImg   = document.getElementById("modalImg");
+    const modalName  = document.getElementById("modalName");
+    const modalClose = document.getElementById("modalClose");
+    const subtitle   = document.querySelector(".subtitle");
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        img.src = img.dataset.src;
+        observer.unobserve(img);
+      });
+    }, { rootMargin: "150px" });
 
     function addCard(file) {
       const item = document.createElement("div");
       item.className = "card-item";
 
       const img = document.createElement("img");
-      img.src = BASE + file;
+      img.dataset.src = BASE + file;
       img.alt = file;
       img.loading = "lazy";
+      img.decoding = "async";
+      img.title = "Click to view full HD";
+      img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='270' viewBox='0 0 360 270'%3E%3Crect width='360' height='270' fill='%231a472a'/%3E%3C/svg%3E";
+      img.addEventListener("load", () => img.classList.add("loaded"));
+
+      observer.observe(img);
 
       const name = document.createElement("span");
       name.className = "card-name";
@@ -185,7 +231,7 @@
     }
 
     async function loadCards() {
-      subtitle.textContent = "Loading...";
+      subtitle.textContent = "Đang tải ảnh...";
       try {
         const res = await fetch(API_URL);
         if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
@@ -193,9 +239,9 @@
         const images = files.filter(f => f.type === "file" && /\.(png|jpg|jpeg|gif|webp)$/i.test(f.name));
         gallery.innerHTML = "";
         images.forEach(f => addCard(f.name));
-        subtitle.textContent = `${images.length} image${images.length !== 1 ? "s" : ""} · auto-fetched from GitHub`;
+        subtitle.textContent = `${images.length} ảnh · tải nhanh, xem HD`;
       } catch (err) {
-        subtitle.textContent = "Failed to load images.";
+        subtitle.textContent = "Không thể tải ảnh.";
         console.error(err);
       }
     }
